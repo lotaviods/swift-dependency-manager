@@ -1,0 +1,92 @@
+{
+  "name": "swift-dependency-manager",
+  "displayName": "Swift Dependency Manager",
+  "description": "Manage Swift Package Manager dependencies across your workspace — discover packages, parse dependencies, and toggle between local and remote sources.",
+  "version": "0.0.1",
+  "publisher": "fullarm",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:swiftDependencies",
+    "onCommand:swiftDependencyManager.refreshDependencies",
+    "onCommand:swiftDependencyManager.editDependency",
+    "onCommand:swiftDependencyManager.showDependencyOverview"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "swiftDependencies",
+          "name": "Swift Dependencies"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "swiftDependencyManager.refreshDependencies",
+        "title": "Refresh Swift Dependencies",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "swiftDependencyManager.editDependency",
+        "title": "Edit Dependency"
+      },
+      {
+        "command": "swiftDependencyManager.showDependencyOverview",
+        "title": "Show Dependency Overview"
+      },
+      {
+        "command": "swiftDependencyManager.fetchAllRemotes",
+        "title": "Fetch All Git Remotes",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "swiftDependencyManager.openTerminal",
+        "title": "Open Terminal Here",
+        "icon": "$(terminal)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "swiftDependencyManager.refreshDependencies",
+          "when": "view == swiftDependencies",
+          "group": "navigation"
+        },
+        {
+          "command": "swiftDependencyManager.fetchAllRemotes",
+          "when": "view == swiftDependencies",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "swiftDependencyManager.openTerminal",
+          "when": "view == swiftDependencies && viewItem == package",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "vitest run",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.32.0",
+    "fast-check": "^3.15.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  }
+}

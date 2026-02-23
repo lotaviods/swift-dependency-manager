@@ -47,7 +47,8 @@
       },
       {
         "command": "swiftDependencyManager.showDependencyOverview",
-        "title": "Show Dependency Overview"
+        "title": "Show Dependency Overview",
+        "icon": "$(graph)"
       },
       {
         "command": "swiftDependencyManager.fetchAllRemotes",
@@ -69,6 +70,11 @@
         },
         {
           "command": "swiftDependencyManager.fetchAllRemotes",
+          "when": "view == swiftDependencies",
+          "group": "navigation"
+        },
+        {
+          "command": "swiftDependencyManager.showDependencyOverview",
           "when": "view == swiftDependencies",
           "group": "navigation"
         }

@@ -10,7 +10,7 @@ interface PackageWithDeps {
 
 interface DependencyUsage {
   name: string;
-  packages: string[];
+  packages: Array<{ packageName: string; version: string }>;
 }
 
 /**
@@ -244,9 +244,11 @@ export class OverviewPanel {
         const depsHtml = pkg.dependencies
           .map(dep => {
             const source = dep.type === 'local' ? 'local' : 'remote';
-            const label = dep.type === 'local' ? dep.path : formatDependencyLabel(dep);
             const depName = getDependencyName(dep);
-            return `<span class="dep-tag ${source}" title="${escapeHtml(label)}">${escapeHtml(depName)}</span>`;
+            const detail = dep.type === 'local' 
+              ? dep.path 
+              : formatDependencyLabel(dep);
+            return `<span class="dep-tag ${source}" title="${escapeHtml(depName)}: ${escapeHtml(detail)}">${escapeHtml(depName)} <span style="opacity: 0.7; font-size: 11px;">${escapeHtml(detail)}</span></span>`;
           })
           .join('');
 
@@ -264,7 +266,7 @@ export class OverviewPanel {
       .join('');
   }
 
-  private renderDependenciesView(index: Map<string, string[]>): string {
+  private renderDependenciesView(index: Map<string, Array<{ packageName: string; version: string }>>): string {
     if (index.size === 0) {
       return '<p class="empty-msg">No dependencies found.</p>';
     }
@@ -272,15 +274,15 @@ export class OverviewPanel {
     const sorted = Array.from(index.entries()).sort((a, b) => a[0].localeCompare(b[0]));
 
     return sorted
-      .map(([depName, packages]) => {
-        const pkgBadges = packages
-          .map(pkg => `<span class="pkg-badge">${escapeHtml(pkg)}</span>`)
+      .map(([depName, usages]) => {
+        const pkgBadges = usages
+          .map(usage => `<span class="pkg-badge">${escapeHtml(usage.packageName)} <span style="opacity: 0.7; font-size: 11px;">${escapeHtml(usage.version)}</span></span>`)
           .join('');
 
         return `
           <div class="dependency-card">
             <div class="dependency-name">${escapeHtml(depName)}</div>
-            <div class="used-by">Used by ${packages.length} package${packages.length !== 1 ? 's' : ''}</div>
+            <div class="used-by">Used by ${usages.length} package${usages.length !== 1 ? 's' : ''}</div>
             <div class="package-list">${pkgBadges}</div>
           </div>
         `;
@@ -288,16 +290,20 @@ export class OverviewPanel {
       .join('');
   }
 
-  private buildDependencyIndex(packages: PackageWithDeps[]): Map<string, string[]> {
-    const index = new Map<string, string[]>();
+  private buildDependencyIndex(packages: PackageWithDeps[]): Map<string, Array<{ packageName: string; version: string }>> {
+    const index = new Map<string, Array<{ packageName: string; version: string }>>();
 
     for (const pkg of packages) {
       for (const dep of pkg.dependencies) {
         const depName = getDependencyName(dep);
+        const version = dep.type === 'local' 
+          ? dep.path 
+          : formatDependencyLabel(dep);
+        
         if (!index.has(depName)) {
           index.set(depName, []);
         }
-        index.get(depName)!.push(pkg.name);
+        index.get(depName)!.push({ packageName: pkg.name, version });
       }
     }
 

@@ -2,6 +2,8 @@
 
 A VS Code extension for managing Swift Package Manager dependencies across your workspace. Discover packages, parse dependencies, and toggle between local and remote sources without manual file editing.
 
+> This project is vibe coded.
+
 ## Why This Exists
 
 When developing multiple interdependent Swift packages, developers often need to:

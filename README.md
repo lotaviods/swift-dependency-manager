@@ -163,17 +163,6 @@ The extension validates 10 correctness properties:
 9. **Grouping completeness** — All dependencies appear in exactly one group
 10. **Inconsistency detection** — Differing versions/sources are flagged
 
-## License
-
-MIT
-
-## Contributing
-
-This is a spec-driven project built with property-based testing. All changes should:
-1. Update the spec files (`.kiro/specs/swift-dependency-manager-extension/`)
-2. Add or update property-based tests
-3. Ensure all 41 tests pass
-
 ## Troubleshooting
 
 ### Extension doesn't appear in sidebar

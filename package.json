@@ -59,6 +59,11 @@
         "command": "swiftDependencyManager.openTerminal",
         "title": "Open Terminal Here",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "swiftDependencyManager.bulkUpdateDependency",
+        "title": "Swift Dependencies: Bulk Update Dependency",
+        "icon": "$(replace-all)"
       }
     ],
     "menus": {
@@ -75,6 +80,11 @@
         },
         {
           "command": "swiftDependencyManager.showDependencyOverview",
+          "when": "view == swiftDependencies",
+          "group": "navigation"
+        },
+        {
+          "command": "swiftDependencyManager.bulkUpdateDependency",
           "when": "view == swiftDependencies",
           "group": "navigation"
         }

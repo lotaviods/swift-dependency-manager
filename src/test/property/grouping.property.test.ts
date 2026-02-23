@@ -103,8 +103,8 @@ describe('Property 9: Dependency grouping is complete', () => {
       fc.property(arbPackages, (packages) => {
         const groups = groupDependenciesByName(packages);
 
-        // Build a set of all (packageName, depIndex) pairs from groups
-        const seen = new Set<string>();
+        // Track entries by object reference to handle duplicate identical deps in the same package
+        const seen = new Set<Dependency>();
 
         for (const group of groups) {
           for (const entry of group.entries) {
@@ -112,10 +112,9 @@ describe('Property 9: Dependency grouping is complete', () => {
             // Group name should match the dependency name
             expect(group.name).toBe(depName);
 
-            // Track that we saw this entry
-            const key = `${entry.packageName}:${JSON.stringify(entry.dependency)}`;
-            expect(seen.has(key)).toBe(false);
-            seen.add(key);
+            // Track that we saw this entry (by reference identity)
+            expect(seen.has(entry.dependency)).toBe(false);
+            seen.add(entry.dependency);
           }
         }
       }),

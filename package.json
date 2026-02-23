@@ -18,8 +18,17 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "swiftDependenciesContainer",
+          "title": "Swift Dependencies",
+          "icon": "$(package)"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "swiftDependenciesContainer": [
         {
           "id": "swiftDependencies",
           "name": "Swift Dependencies"

@@ -237,7 +237,10 @@ export class DependencyEditorPanel {
   <div id="remoteFields" style="display:${!isLocal ? 'block' : 'none'}">
     <div class="field">
       <label for="urlInput">URL</label>
-      <input type="text" id="urlInput" value="${escapeHtml(url)}" />
+      <div style="display: flex; gap: 8px; align-items: flex-start;">
+        <input type="text" id="urlInput" value="${escapeHtml(url)}" style="flex: 1;" />
+        <button type="button" id="resetUrlBtn" class="secondary" style="padding: 6px 10px; margin-top: 0; display: none; white-space: nowrap;">Reset URL</button>
+      </div>
       <div class="error" id="urlError"></div>
     </div>
     <div class="field">
@@ -271,6 +274,54 @@ export class DependencyEditorPanel {
     const localFields = document.getElementById('localFields');
     const remoteFields = document.getElementById('remoteFields');
     const urlInput = document.getElementById('urlInput');
+    const resetUrlBtn = document.getElementById('resetUrlBtn');
+
+    // Check if there's a predefined URL and show/hide reset button accordingly
+    function updateResetButtonVisibility() {
+      const currentUrl = urlInput.value;
+      const packageName = extractPackageNameFromUrl(currentUrl);
+      const predefinedUrl = lookupPredefinedUrl(packageName);
+      
+      if (predefinedUrl && currentUrl !== predefinedUrl) {
+        resetUrlBtn.style.display = 'inline-block';
+        resetUrlBtn.title = \`Reset to: \${predefinedUrl}\`;
+      } else {
+        resetUrlBtn.style.display = 'none';
+      }
+    }
+
+    // Extract package name from URL (last part before .git)
+    function extractPackageNameFromUrl(url) {
+      if (!url) return '';
+      const match = url.match(/\\/([^\\/]+?)(\\.git)?$/);
+      return match ? match[1] : '';
+    }
+
+    // Look up predefined URL by package name
+    function lookupPredefinedUrl(name) {
+      if (!name) return '';
+      const nameLower = name.toLowerCase();
+      for (const [key, value] of Object.entries(depData.urlMappings)) {
+        if (key.toLowerCase() === nameLower) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    // Reset URL to predefined value
+    resetUrlBtn.addEventListener('click', () => {
+      const currentUrl = urlInput.value;
+      const packageName = extractPackageNameFromUrl(currentUrl);
+      const predefinedUrl = lookupPredefinedUrl(packageName);
+      if (predefinedUrl) {
+        urlInput.value = predefinedUrl;
+        updateResetButtonVisibility();
+      }
+    });
+
+    // Update reset button visibility when URL changes
+    urlInput.addEventListener('input', updateResetButtonVisibility);
 
     radios.forEach(r => r.addEventListener('change', () => {
       const isLocal = document.querySelector('input[name="sourceType"]:checked').value === 'local';
@@ -282,6 +333,7 @@ export class DependencyEditorPanel {
         const inferredUrl = inferUrlFromPath(depData.path);
         if (inferredUrl) {
           urlInput.value = inferredUrl;
+          updateResetButtonVisibility();
         }
       }
       
@@ -359,6 +411,9 @@ export class DependencyEditorPanel {
         el.style.display = 'none';
       });
     }
+
+    // Initialize reset button visibility on load
+    updateResetButtonVisibility();
   </script>
 </body>
 </html>`;

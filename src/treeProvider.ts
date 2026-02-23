@@ -68,11 +68,13 @@ export class DependencyTreeProvider implements vscode.TreeDataProvider<Dependenc
 
   getChildren(element?: DependencyTreeItem): DependencyTreeItem[] {
     if (!element) {
-      // Root level: return package nodes
-      return this.packages.map(pkg => ({
-        type: 'package' as const,
-        package: pkg,
-      }));
+      // Root level: return package nodes, filtering out packages with no dependencies
+      return this.packages
+        .filter(pkg => pkg.dependencies.length > 0)
+        .map(pkg => ({
+          type: 'package' as const,
+          package: pkg,
+        }));
     }
 
     if (element.type === 'package') {

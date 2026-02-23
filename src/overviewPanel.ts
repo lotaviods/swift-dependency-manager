@@ -269,7 +269,13 @@ export class OverviewPanel {
       return '<p class="empty-msg">No packages found.</p>';
     }
 
-    return packages
+    const packagesWithDeps = packages.filter(pkg => pkg.dependencies.length > 0);
+
+    if (packagesWithDeps.length === 0) {
+      return '<p class="empty-msg">No packages with dependencies found.</p>';
+    }
+
+    return packagesWithDeps
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(pkg => {
         const depCount = pkg.dependencies.length;
@@ -298,7 +304,7 @@ export class OverviewPanel {
                 ▶ Terminal
               </button>
             </div>
-            <div class="deps-list" style="margin-top: 8px;">${depsHtml || '<span style="color: var(--vscode-descriptionForeground);">No dependencies</span>'}</div>
+            <div class="deps-list" style="margin-top: 8px;">${depsHtml}</div>
           </div>
         `;
       })

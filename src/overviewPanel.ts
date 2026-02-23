@@ -36,6 +36,19 @@ export class OverviewPanel {
 
     this.panel.webview.html = this.getHtml(packages);
 
+    this.panel.webview.onDidReceiveMessage(message => {
+      if (message.command === 'openTerminal') {
+        const pkg = packages.find(p => p.name === message.packageName);
+        if (pkg) {
+          const terminal = vscode.window.createTerminal({
+            name: pkg.name,
+            cwd: pkg.path,
+          });
+          terminal.show();
+        }
+      }
+    });
+
     this.panel.onDidDispose(() => {
       this.panel = undefined;
     });
@@ -201,6 +214,23 @@ export class OverviewPanel {
       padding: 4px 8px;
       font-size: 12px;
     }
+    .terminal-btn {
+      background: var(--vscode-editor-background);
+      border: 1px solid var(--vscode-widget-border, #333);
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: var(--vscode-foreground);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .terminal-btn:hover {
+      background: var(--vscode-editor-selectionBackground, #094771);
+      border-color: var(--vscode-focusBorder, #007acc);
+    }
   </style>
 </head>
 <body>
@@ -221,6 +251,8 @@ export class OverviewPanel {
   </div>
 
   <script>
+    const vscode = acquireVsCodeApi();
+    
     function switchTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -254,12 +286,19 @@ export class OverviewPanel {
 
         return `
           <div class="package-card">
-            <div class="package-name">
-              ${escapeHtml(pkg.name)}
-              <span class="dep-count">${depCount}</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div style="flex: 1;">
+                <div class="package-name">
+                  ${escapeHtml(pkg.name)}
+                  <span class="dep-count">${depCount}</span>
+                </div>
+                <div class="package-path">${escapeHtml(pkg.path)}</div>
+              </div>
+              <button class="terminal-btn" onclick="vscode.postMessage({command: 'openTerminal', packageName: '${escapeHtml(pkg.name)}'})">
+                ▶ Terminal
+              </button>
             </div>
-            <div class="package-path">${escapeHtml(pkg.path)}</div>
-            <div class="deps-list">${depsHtml || '<span style="color: var(--vscode-descriptionForeground);">No dependencies</span>'}</div>
+            <div class="deps-list" style="margin-top: 8px;">${depsHtml || '<span style="color: var(--vscode-descriptionForeground);">No dependencies</span>'}</div>
           </div>
         `;
       })

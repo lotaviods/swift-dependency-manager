@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { SwiftPackage, Dependency } from './models';
-import { formatDependencyLabel } from './treeLabels';
+import { formatDependencyLabel, getDependencyName } from './treeLabels';
 
 interface PackageWithDeps {
   name: string;
@@ -245,7 +245,8 @@ export class OverviewPanel {
           .map(dep => {
             const source = dep.type === 'local' ? 'local' : 'remote';
             const label = dep.type === 'local' ? dep.path : formatDependencyLabel(dep);
-            return `<span class="dep-tag ${source}" title="${escapeHtml(label)}">${escapeHtml(dep.name || 'unknown')}</span>`;
+            const depName = getDependencyName(dep);
+            return `<span class="dep-tag ${source}" title="${escapeHtml(label)}">${escapeHtml(depName)}</span>`;
           })
           .join('');
 
@@ -292,7 +293,7 @@ export class OverviewPanel {
 
     for (const pkg of packages) {
       for (const dep of pkg.dependencies) {
-        const depName = dep.name || 'unknown';
+        const depName = getDependencyName(dep);
         if (!index.has(depName)) {
           index.set(depName, []);
         }

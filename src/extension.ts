@@ -141,11 +141,16 @@ export function activate(context: vscode.ExtensionContext) {
           // Load URL mappings and pre-fill if available
           let defaultUrl = '';
           try {
-            const configPath = path.join(__dirname, '..', 'dependency-urls.json');
-            const configContent = fs.readFileSync(configPath, 'utf-8');
-            const urlMappings: Record<string, string> = JSON.parse(configContent);
-            if (urlMappings[depName]) {
-              defaultUrl = urlMappings[depName];
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (workspaceFolders && workspaceFolders.length > 0) {
+              const configPath = path.join(workspaceFolders[0].uri.fsPath, 'dependency-urls.json');
+              if (fs.existsSync(configPath)) {
+                const configContent = fs.readFileSync(configPath, 'utf-8');
+                const urlMappings: Record<string, string> = JSON.parse(configContent);
+                if (urlMappings[depName]) {
+                  defaultUrl = urlMappings[depName];
+                }
+              }
             }
           } catch {
             // Config not found, no pre-fill

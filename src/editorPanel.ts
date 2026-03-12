@@ -8,14 +8,24 @@ import { parsePackageSwift } from './parser';
 import { getDependencyName } from './treeLabels';
 
 // Load dependency URL mappings from JSON config
-let urlMappings: Record<string, string> = {};
-try {
-  const configPath = path.join(__dirname, '..', 'dependency-urls.json');
-  const configContent = fs.readFileSync(configPath, 'utf-8');
-  urlMappings = JSON.parse(configContent);
-} catch {
-  // If config doesn't exist, use empty mappings
+function loadUrlMappings(): Record<string, string> {
+  try {
+    // Try workspace root first
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (workspaceFolders && workspaceFolders.length > 0) {
+      const configPath = path.join(workspaceFolders[0].uri.fsPath, 'dependency-urls.json');
+      if (fs.existsSync(configPath)) {
+        const configContent = fs.readFileSync(configPath, 'utf-8');
+        return JSON.parse(configContent);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load dependency-urls.json:', err);
+  }
+  return {};
 }
+
+let urlMappings: Record<string, string> = loadUrlMappings();
 
 /**
  * Manages a webview panel for editing a single dependency.
@@ -242,6 +252,9 @@ export class DependencyEditorPanel {
         <button type="button" id="resetUrlBtn" class="secondary" style="padding: 6px 10px; margin-top: 0; display: none; white-space: nowrap;">Reset URL</button>
       </div>
       <div class="error" id="urlError"></div>
+      <div id="urlAppliedIndicator" style="display: none; color: var(--vscode-charts-green, #4caf50); font-size: 12px; margin-top: 4px;">
+        ✓ URL from dependency-urls.json applied
+      </div>
     </div>
     <div class="field">
       <label for="strategySelect">Version Strategy</label>
@@ -275,6 +288,7 @@ export class DependencyEditorPanel {
     const remoteFields = document.getElementById('remoteFields');
     const urlInput = document.getElementById('urlInput');
     const resetUrlBtn = document.getElementById('resetUrlBtn');
+    const urlAppliedIndicator = document.getElementById('urlAppliedIndicator');
 
     // Check if there's a predefined URL and show/hide reset button accordingly
     function updateResetButtonVisibility() {
@@ -285,8 +299,13 @@ export class DependencyEditorPanel {
       if (predefinedUrl && currentUrl !== predefinedUrl) {
         resetUrlBtn.style.display = 'inline-block';
         resetUrlBtn.title = \`Reset to: \${predefinedUrl}\`;
+        urlAppliedIndicator.style.display = 'none';
+      } else if (predefinedUrl && currentUrl === predefinedUrl) {
+        resetUrlBtn.style.display = 'none';
+        urlAppliedIndicator.style.display = 'block';
       } else {
         resetUrlBtn.style.display = 'none';
+        urlAppliedIndicator.style.display = 'none';
       }
     }
 

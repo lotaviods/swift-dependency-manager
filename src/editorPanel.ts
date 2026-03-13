@@ -250,10 +250,14 @@ export class DependencyEditorPanel {
       <div style="display: flex; gap: 8px; align-items: flex-start;">
         <input type="text" id="urlInput" value="${escapeHtml(url)}" style="flex: 1;" />
         <button type="button" id="resetUrlBtn" class="secondary" style="padding: 6px 10px; margin-top: 0; display: none; white-space: nowrap;">Reset URL</button>
+        <button type="button" id="resetPrefixedUrlBtn" class="secondary" style="padding: 6px 10px; margin-top: 0; display: none; white-space: nowrap;">Reset Prefixed</button>
       </div>
       <div class="error" id="urlError"></div>
       <div id="urlAppliedIndicator" style="display: none; color: var(--vscode-charts-green, #4caf50); font-size: 12px; margin-top: 4px;">
         ✓ URL from dependency-urls.json applied
+      </div>
+      <div id="prefixedUrlAppliedIndicator" style="display: none; color: var(--vscode-charts-blue, #2196f3); font-size: 12px; margin-top: 4px;">
+        ✓ Prefixed URL from dependency-urls.json applied
       </div>
     </div>
     <div class="field">
@@ -288,24 +292,43 @@ export class DependencyEditorPanel {
     const remoteFields = document.getElementById('remoteFields');
     const urlInput = document.getElementById('urlInput');
     const resetUrlBtn = document.getElementById('resetUrlBtn');
+    const resetPrefixedUrlBtn = document.getElementById('resetPrefixedUrlBtn');
     const urlAppliedIndicator = document.getElementById('urlAppliedIndicator');
+    const prefixedUrlAppliedIndicator = document.getElementById('prefixedUrlAppliedIndicator');
 
-    // Check if there's a predefined URL and show/hide reset button accordingly
+    // Check if there's a predefined URL and show/hide reset buttons accordingly
     function updateResetButtonVisibility() {
       const currentUrl = urlInput.value;
       const packageName = extractPackageNameFromUrl(currentUrl);
       const predefinedUrl = lookupPredefinedUrl(packageName);
+      const prefixedUrl = lookupPrefixedUrl(packageName);
       
+      // Reset standard URL button
       if (predefinedUrl && currentUrl !== predefinedUrl) {
         resetUrlBtn.style.display = 'inline-block';
         resetUrlBtn.title = \`Reset to: \${predefinedUrl}\`;
-        urlAppliedIndicator.style.display = 'none';
-      } else if (predefinedUrl && currentUrl === predefinedUrl) {
-        resetUrlBtn.style.display = 'none';
-        urlAppliedIndicator.style.display = 'block';
       } else {
         resetUrlBtn.style.display = 'none';
+      }
+      
+      // Reset prefixed URL button
+      if (prefixedUrl && currentUrl !== prefixedUrl) {
+        resetPrefixedUrlBtn.style.display = 'inline-block';
+        resetPrefixedUrlBtn.title = \`Reset to: \${prefixedUrl}\`;
+      } else {
+        resetPrefixedUrlBtn.style.display = 'none';
+      }
+      
+      // Show indicators
+      if (predefinedUrl && currentUrl === predefinedUrl) {
+        urlAppliedIndicator.style.display = 'block';
+        prefixedUrlAppliedIndicator.style.display = 'none';
+      } else if (prefixedUrl && currentUrl === prefixedUrl) {
         urlAppliedIndicator.style.display = 'none';
+        prefixedUrlAppliedIndicator.style.display = 'block';
+      } else {
+        urlAppliedIndicator.style.display = 'none';
+        prefixedUrlAppliedIndicator.style.display = 'none';
       }
     }
 
@@ -328,6 +351,19 @@ export class DependencyEditorPanel {
       return '';
     }
 
+    // Look up prefixed URL by package name (dependency_url_<name>)
+    function lookupPrefixedUrl(name) {
+      if (!name) return '';
+      const prefixedKey = \`dependency_url_\${name}\`;
+      const prefixedKeyLower = prefixedKey.toLowerCase();
+      for (const [key, value] of Object.entries(depData.urlMappings)) {
+        if (key.toLowerCase() === prefixedKeyLower) {
+          return value;
+        }
+      }
+      return '';
+    }
+
     // Reset URL to predefined value
     resetUrlBtn.addEventListener('click', () => {
       const currentUrl = urlInput.value;
@@ -335,6 +371,17 @@ export class DependencyEditorPanel {
       const predefinedUrl = lookupPredefinedUrl(packageName);
       if (predefinedUrl) {
         urlInput.value = predefinedUrl;
+        updateResetButtonVisibility();
+      }
+    });
+
+    // Reset URL to prefixed value
+    resetPrefixedUrlBtn.addEventListener('click', () => {
+      const currentUrl = urlInput.value;
+      const packageName = extractPackageNameFromUrl(currentUrl);
+      const prefixedUrl = lookupPrefixedUrl(packageName);
+      if (prefixedUrl) {
+        urlInput.value = prefixedUrl;
         updateResetButtonVisibility();
       }
     });
@@ -377,6 +424,15 @@ export class DependencyEditorPanel {
       const nameLower = name.toLowerCase();
       for (const [key, value] of Object.entries(depData.urlMappings)) {
         if (key.toLowerCase() === nameLower) {
+          return value;
+        }
+      }
+      
+      // Check for prefixed URL (dependency_url_<name>)
+      const prefixedKey = \`dependency_url_\${name}\`;
+      const prefixedKeyLower = prefixedKey.toLowerCase();
+      for (const [key, value] of Object.entries(depData.urlMappings)) {
+        if (key.toLowerCase() === prefixedKeyLower) {
           return value;
         }
       }

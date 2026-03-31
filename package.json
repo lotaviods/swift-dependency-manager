@@ -14,7 +14,8 @@
     "onView:swiftDependencies",
     "onCommand:swiftDependencyManager.refreshDependencies",
     "onCommand:swiftDependencyManager.editDependency",
-    "onCommand:swiftDependencyManager.showDependencyOverview"
+    "onCommand:swiftDependencyManager.showDependencyOverview",
+    "onCommand:swiftDependencyManager.openGitk"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -64,6 +65,16 @@
         "command": "swiftDependencyManager.bulkUpdateDependency",
         "title": "Swift Dependencies: Bulk Update Dependency",
         "icon": "$(replace-all)"
+      },
+      {
+        "command": "swiftDependencyManager.openGitk",
+        "title": "Open Gitk",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "swiftDependencyManager.checkoutBranch",
+        "title": "Checkout Branch",
+        "icon": "$(arrow-swap)"
       }
     ],
     "menus": {
@@ -91,8 +102,18 @@
       ],
       "view/item/context": [
         {
+          "command": "swiftDependencyManager.openGitk",
+          "when": "view == swiftDependencies && viewItem == package",
+          "group": "inline"
+        },
+        {
           "command": "swiftDependencyManager.openTerminal",
           "when": "view == swiftDependencies && viewItem == package",
+          "group": "inline"
+        },
+        {
+          "command": "swiftDependencyManager.checkoutBranch",
+          "when": "view == swiftDependencies && viewItem == branch",
           "group": "inline"
         }
       ]

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { SwiftPackage } from './models';
+import { BranchInfo, ExecCommand, listBranches } from './gitService';
 import { formatDependencyLabel, getDependencyName } from './treeLabels';
 
 // Re-export pure functions and types for convenience
@@ -18,7 +19,18 @@ export interface DependencyChildItem {
   parentPackage: SwiftPackage;
 }
 
-export type DependencyTreeItem = PackageTreeItem | DependencyChildItem;
+export interface BranchGroupItem {
+  type: 'branchGroup';
+  parentPackage: SwiftPackage;
+}
+
+export interface BranchTreeItem {
+  type: 'branch';
+  branch: BranchInfo;
+  parentPackage: SwiftPackage;
+}
+
+export type DependencyTreeItem = PackageTreeItem | DependencyChildItem | BranchGroupItem | BranchTreeItem;
 
 // --- TreeDataProvider implementation ---
 
@@ -27,6 +39,11 @@ export class DependencyTreeProvider implements vscode.TreeDataProvider<Dependenc
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private packages: SwiftPackage[] = [];
+  private exec: ExecCommand | undefined;
+
+  setExec(exec: ExecCommand): void {
+    this.exec = exec;
+  }
 
   setPackages(packages: SwiftPackage[]): void {
     this.packages = packages;
@@ -43,13 +60,38 @@ export class DependencyTreeProvider implements vscode.TreeDataProvider<Dependenc
 
   getTreeItem(element: DependencyTreeItem): vscode.TreeItem {
     if (element.type === 'package') {
+      const pkg = element.package;
       const item = new vscode.TreeItem(
-        element.package.name,
-        element.package.dependencies.length > 0
-          ? vscode.TreeItemCollapsibleState.Collapsed
-          : vscode.TreeItemCollapsibleState.None
+        pkg.name,
+        vscode.TreeItemCollapsibleState.Collapsed
       );
       item.contextValue = 'package';
+      if (pkg.isSubmodule) {
+        item.iconPath = new vscode.ThemeIcon('git-submodule');
+        if (pkg.isEmptySubmodule) {
+          item.description = '(not initialized)';
+        }
+      }
+      return item;
+    }
+
+    if (element.type === 'branchGroup') {
+      const item = new vscode.TreeItem('Branches', vscode.TreeItemCollapsibleState.Collapsed);
+      item.iconPath = new vscode.ThemeIcon('git-branch');
+      item.contextValue = 'branchGroup';
+      return item;
+    }
+
+    if (element.type === 'branch') {
+      const item = new vscode.TreeItem(element.branch.name, vscode.TreeItemCollapsibleState.None);
+      item.contextValue = element.branch.isCurrent ? 'activeBranch' : 'branch';
+      item.iconPath = new vscode.ThemeIcon(element.branch.isCurrent ? 'check' : 'git-branch');
+      if (element.branch.isRemote) {
+        item.description = '(remote)';
+      }
+      if (element.branch.isCurrent) {
+        item.description = (item.description ? item.description + ' ' : '') + '● current';
+      }
       return item;
     }
 
@@ -66,27 +108,45 @@ export class DependencyTreeProvider implements vscode.TreeDataProvider<Dependenc
     return item;
   }
 
-  getChildren(element?: DependencyTreeItem): DependencyTreeItem[] {
+  async getChildren(element?: DependencyTreeItem): Promise<DependencyTreeItem[]> {
     if (!element) {
-      // Root level: return package nodes, filtering out packages with no dependencies
-      return this.packages
-        .filter(pkg => pkg.dependencies.length > 0)
-        .map(pkg => ({
-          type: 'package' as const,
-          package: pkg,
-        }));
-    }
-
-    if (element.type === 'package') {
-      // Package level: return dependency child nodes
-      return element.package.dependencies.map(dep => ({
-        type: 'dependency' as const,
-        dependency: dep,
-        parentPackage: element.package,
+      return this.packages.map(pkg => ({
+        type: 'package' as const,
+        package: pkg,
       }));
     }
 
-    // Dependency nodes have no children
+    if (element.type === 'package') {
+      const items: DependencyTreeItem[] = [];
+
+      // Dependencies first
+      for (const dep of element.package.dependencies) {
+        items.push({
+          type: 'dependency' as const,
+          dependency: dep,
+          parentPackage: element.package,
+        });
+      }
+
+      // Then a "Branches" group node
+      items.push({
+        type: 'branchGroup' as const,
+        parentPackage: element.package,
+      });
+
+      return items;
+    }
+
+    if (element.type === 'branchGroup') {
+      if (!this.exec) { return []; }
+      const result = await listBranches(element.parentPackage.path, this.exec);
+      return result.branches.map(branch => ({
+        type: 'branch' as const,
+        branch,
+        parentPackage: element.parentPackage,
+      }));
+    }
+
     return [];
   }
 }

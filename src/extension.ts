@@ -3,8 +3,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as child_process from 'child_process';
 import { Dependency, SwiftPackage, VersionRequirement } from './models';
-import { DependencyTreeProvider } from './treeProvider';
+import { DependencyTreeProvider, BranchTreeItem } from './treeProvider';
 import { DependencyEditorPanel } from './editorPanel';
+import { checkout } from './gitService';
 import { OverviewPanel } from './overviewPanel';
 import { discoverPackages, createPackageWatcher } from './discoveryService';
 import { computeReplacements } from './bulkUpdate';
@@ -17,6 +18,22 @@ export function activate(context: vscode.ExtensionContext) {
   console.log('Swift Dependency Manager is now active.');
 
   const treeProvider = new DependencyTreeProvider();
+
+  // Provide exec function for git operations
+  const exec = (command: string, options: { cwd: string }) => {
+    return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+      child_process.exec(command, options, (error, stdout, stderr) => {
+        if (error) {
+          const err = new Error(stderr || error.message);
+          (err as Error & { stderr?: string }).stderr = stderr;
+          reject(err);
+        } else {
+          resolve({ stdout, stderr });
+        }
+      });
+    });
+  };
+  treeProvider.setExec(exec);
 
   const treeView = vscode.window.createTreeView('swiftDependencies', {
     treeDataProvider: treeProvider,
@@ -73,6 +90,50 @@ export function activate(context: vscode.ExtensionContext) {
       'swiftDependencyManager.fetchAllRemotes',
       async () => {
         await fetchAllGitRemotes(treeProvider.getPackages());
+      }
+    )
+  );
+
+  // Register checkout branch command
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'swiftDependencyManager.checkoutBranch',
+      async (item: BranchTreeItem) => {
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Checking out branch ${item.branch.name}...`,
+            cancellable: false,
+          },
+          async () => {
+            const result = await checkout(item.parentPackage.path, item.branch.name, exec);
+            if (result.success) {
+              await refreshPackages();
+            } else {
+              if (result.error.type === 'uncommitted_changes') {
+                vscode.window.showErrorMessage(
+                  `Cannot checkout "${item.branch.name}": uncommitted changes. Commit or stash first.`
+                );
+              } else {
+                vscode.window.showErrorMessage(
+                  `Checkout failed: ${result.error.message}`
+                );
+              }
+            }
+          }
+        );
+      }
+    )
+  );
+
+  // Register open gitk command
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      'swiftDependencyManager.openGitk',
+      (item: { type: string; package: SwiftPackage }) => {
+        if (item.type === 'package') {
+          child_process.exec('gitk --all &', { cwd: item.package.path });
+        }
       }
     )
   );

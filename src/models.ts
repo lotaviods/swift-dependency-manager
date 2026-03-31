@@ -41,6 +41,10 @@ export interface SwiftPackage {
   path: string;
   manifestPath: string;
   dependencies: Dependency[];
+  /** True if this package is a Git submodule */
+  isSubmodule?: boolean;
+  /** True if the submodule directory is empty / not initialized */
+  isEmptySubmodule?: boolean;
 }
 
 /** Warning produced when a dependency declaration cannot be parsed */
